@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body-md min-h-screen overflow-x-hidden;
+    background-image: 
+      radial-gradient(at 10% 20%, rgba(240, 255, 240, 0.65) 0px, transparent 50%),
+      radial-gradient(at 85% 15%, rgba(230, 230, 250, 0.6) 0px, transparent 55%),
+      radial-gradient(at 50% 60%, rgba(255, 218, 185, 0.35) 0px, transparent 60%),
+      radial-gradient(at 90% 85%, rgba(152, 216, 200, 0.3) 0px, transparent 50%),
+      radial-gradient(at 15% 85%, rgba(213, 234, 184, 0.45) 0px, transparent 50%);
+    background-attachment: fixed;
+    background-size: 100% 100%;
+  }
+
+  .dark body {
+    @apply bg-[#141716] text-[#eff1ef];
+    background-image: 
+      radial-gradient(at 10% 20%, rgba(40, 105, 92, 0.25) 0px, transparent 50%),
+      radial-gradient(at 85% 15%, rgba(82, 100, 61, 0.2) 0px, transparent 55%),
+      radial-gradient(at 50% 60%, rgba(132, 82, 59, 0.15) 0px, transparent 60%);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/45 dark:bg-white/10 backdrop-blur-[24px] border-t-[1.5px] border-l-[1.5px] border-white/70 dark:border-white/20 border-r border-b border-white/30 shadow-sm shadow-secondary/5 rounded-2xl;
+  }
+
+  .glass-panel-elevated {
+    @apply bg-white/65 dark:bg-white/15 backdrop-blur-[36px] border-t-[1.5px] border-l-[1.5px] border-white/90 dark:border-white/30 border-r border-b border-white/40 shadow-md shadow-secondary/10 rounded-3xl;
+  }
+
+  .glass-card {
+    @apply bg-white/50 dark:bg-white/10 backdrop-blur-[24px] border-t-[1.5px] border-l-[1.5px] border-white/80 dark:border-white/20 border-r border-b border-white/30 shadow-sm shadow-secondary/5 transition-all duration-300;
+  }
+
+  .glass-input {
+    @apply bg-white/30 dark:bg-white/10 backdrop-blur-[12px] border border-white/60 dark:border-white/20 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-on-surface-variant/50;
+  }
+
+  .glass-button {
+    @apply bg-white/40 dark:bg-white/15 backdrop-blur-[16px] border border-white/70 dark:border-white/20 rounded-full hover:bg-white/60 dark:hover:bg-white/25 transition-all duration-300;
+  }
+
+  .ambient-shadow {
+    box-shadow: 0 16px 36px -10px rgba(135, 169, 107, 0.15);
+  }
+
+  .ambient-shadow-primary {
+    box-shadow: 0 16px 40px -10px rgba(40, 105, 92, 0.2);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-logo-sage;
+  }
+}
+
+/* Material symbols utility */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-block;
+}
+
+.material-symbols-outlined.fill-1,
+.material-symbols-outlined[data-weight="fill"] {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(111, 121, 118, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(111, 121, 118, 0.4);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
