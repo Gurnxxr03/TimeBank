@@ -5,14 +5,32 @@ export default function OnboardingView() {
   const { user, updateProfile, addCustomSkill, removeSkill, setCurrentView, triggerConfetti } = useTimeBank();
 
   const [step, setStep] = useState(1);
-  const [fullName, setFullName] = useState(user.fullName);
-  const [bio, setBio] = useState(user.bio);
+  const [fullName, setFullName] = useState(user.fullName || '');
+  const [bio, setBio] = useState(user.bio || '');
+  const [location, setLocation] = useState(user.location || '');
   const [customTeach, setCustomTeach] = useState('');
   const [customLearn, setCustomLearn] = useState('');
 
+  // Keep fields synced if user hydrates after mount
+  React.useEffect(() => {
+    if (user.fullName && !fullName) setFullName(user.fullName);
+    if (user.bio && !bio) setBio(user.bio);
+    if (user.location && !location) setLocation(user.location);
+  }, [user.fullName, user.bio, user.location]);
+
   const handleSaveProfile = async () => {
-    await updateProfile({ fullName, bio });
+    await updateProfile({ 
+      fullName: fullName.trim() || user.fullName, 
+      bio: bio.trim(), 
+      location: location.trim() || user.location,
+      onboardingCompleted: true 
+    });
     triggerConfetti();
+    setCurrentView('dashboard');
+  };
+
+  const handleSkip = async () => {
+    await updateProfile({ onboardingCompleted: true });
     setCurrentView('dashboard');
   };
 
@@ -41,7 +59,7 @@ export default function OnboardingView() {
           <span className="font-display-lg text-lg text-logo-sage font-bold tracking-tight">TimeBank Setup</span>
         </div>
         <button
-          onClick={() => setCurrentView('dashboard')}
+          onClick={handleSkip}
           className="text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
         >
           <span className="material-symbols-outlined text-sm">close</span>
@@ -164,7 +182,21 @@ export default function OnboardingView() {
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Aarav Sharma"
+                    placeholder="e.g. Jordan Smith"
+                    className="w-full glass-input text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-on-surface-variant mb-1" htmlFor="location">
+                    Location / Neighborhood
+                  </label>
+                  <input
+                    id="location"
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Indiranagar, Bengaluru"
                     className="w-full glass-input text-sm"
                   />
                 </div>

@@ -31,8 +31,8 @@ function AppContent() {
   useEffect(() => {
     if (!loading) {
       if (!authUser) {
-        // If logged out and on protected view, go to landing or login
-        if (['dashboard', 'my-skills', 'wallet', 'admin'].includes(currentView)) {
+        // If logged out and on protected view, go to landing
+        if (['dashboard', 'my-skills', 'wallet', 'admin', 'onboarding'].includes(currentView)) {
           setCurrentView('landing');
         }
       } else {
@@ -40,6 +40,8 @@ function AppContent() {
         if (currentView === 'login' || currentView === 'signup') {
           if (authUser.role === 'admin') {
             setCurrentView('admin');
+          } else if (!authUser.onboarding_completed) {
+            setCurrentView('onboarding');
           } else {
             setCurrentView('dashboard');
           }

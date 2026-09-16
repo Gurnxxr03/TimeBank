@@ -10,13 +10,14 @@ app = FastAPI(
 )
 
 # CORS configuration - Exact origins only (No wildcard when allow_credentials=True)
-allowed_origins = list(set([
-    settings.FRONTEND_URL.rstrip("/"),
+raw_origins = [
+    settings.FRONTEND_URL,
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
     "http://localhost:5174",
+    "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
-]))
+]
+allowed_origins = list({origin.rstrip("/") for origin in raw_origins if origin})
 
 app.add_middleware(
     CORSMiddleware,

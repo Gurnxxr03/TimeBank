@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
     const res = await authApi.login({ email, password });
     const profile = await userApi.getProfile();
     setUser(profile);
-    return res;
+    return profile || res?.user;
   };
 
   const signup = async (name, email, password) => {
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
     const res = await authApi.signup({ name, email, password });
     const profile = await userApi.getProfile();
     setUser(profile);
-    return res;
+    return profile || res?.user;
   };
 
   const googleLogin = async (credential) => {
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
     const res = await authApi.googleAuth(credential);
     const profile = await userApi.getProfile();
     setUser(profile);
-    return res;
+    return profile || res?.user;
   };
 
   const logout = async () => {

@@ -3,30 +3,37 @@ import React, { useEffect, useRef } from 'react';
 export default function GoogleSignInButton({ onGoogleSuccess, onError }) {
   const googleButtonRef = useRef(null);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const onGoogleSuccessRef = useRef(onGoogleSuccess);
+  onGoogleSuccessRef.current = onGoogleSuccess;
 
   useEffect(() => {
     if (!clientId) return;
 
+    let initialized = false;
+
     const initializeGoogle = () => {
+      if (initialized) return;
       if (window.google?.accounts?.id && googleButtonRef.current) {
         try {
           window.google.accounts.id.initialize({
             client_id: clientId,
             callback: (response) => {
               if (response.credential) {
-                onGoogleSuccess(response.credential);
+                onGoogleSuccessRef.current?.(response.credential);
               }
             },
           });
 
+          googleButtonRef.current.innerHTML = '';
           window.google.accounts.id.renderButton(googleButtonRef.current, {
             theme: 'outline',
             size: 'large',
             type: 'standard',
             shape: 'rectangular',
             text: 'signin_with',
-            width: '100%',
+            width: 320,
           });
+          initialized = true;
         } catch (err) {
           console.warn('Google Identity Services initialization error:', err);
         }
@@ -41,10 +48,10 @@ export default function GoogleSignInButton({ onGoogleSuccess, onError }) {
           clearInterval(interval);
           initializeGoogle();
         }
-      }, 300);
+      }, 200);
       return () => clearInterval(interval);
     }
-  }, [clientId, onGoogleSuccess]);
+  }, [clientId]);
 
   if (!clientId) {
     return (

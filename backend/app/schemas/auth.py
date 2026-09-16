@@ -28,7 +28,16 @@ class UserAuthResponse(BaseModel):
     role: UserRole
     status: UserStatus
     auth_provider: AuthProvider
-    rating: Optional[float] = None
+    avatar: Optional[str] = "/default-avatar.svg"
+    location: Optional[str] = "Community Member"
+    bio: Optional[str] = ""
+    time_credits: float = 10.0
+    in_escrow: float = 0.0
+    lifetime_earned: float = 0.0
+    lifetime_spent: float = 0.0
+    onboarding_completed: bool = False
+    availability: Optional[str] = "[]"
+    rating: Optional[float] = 5.0
     created_at: datetime
 
 

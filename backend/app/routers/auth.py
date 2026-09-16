@@ -25,6 +25,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)):
     """
     Register a new local user with email & password.
+    Sets starting balance of 10 Time Credits.
     Sets HttpOnly session cookie on response.
     """
     # Check if user already exists
@@ -35,7 +36,7 @@ def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)
             detail="An account with this email already exists.",
         )
 
-    # Hash password & save user
+    # Hash password & save user with 10 initial credits
     hashed_pw = hash_password(req.password)
     new_user = User(
         name=req.name.strip(),
@@ -44,6 +45,16 @@ def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)
         auth_provider=AuthProvider.LOCAL,
         role=UserRole.USER,
         status=UserStatus.ACTIVE,
+        time_credits=10.0,
+        in_escrow=0.0,
+        lifetime_earned=0.0,
+        lifetime_spent=0.0,
+        onboarding_completed=0,
+        avatar="/default-avatar.svg",
+        location="Community Member",
+        bio="",
+        availability="[]",
+        rating=5.0,
     )
     db.add(new_user)
     db.commit()
@@ -72,7 +83,7 @@ def login(req: LoginRequest, response: Response, db: Session = Depends(get_db)):
             detail="Invalid email or password.",
         )
 
-    if user.auth_provider == AuthProvider.GOOGLE:
+    if user.auth_provider == AuthProvider.GOOGLE and not user.password_hash:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="This account is registered with Google. Please use 'Sign in with Google'.",
@@ -107,11 +118,12 @@ def google_auth(req: GoogleAuthRequest, response: Response, db: Session = Depend
     Sets HttpOnly session cookie on response.
     """
     id_info = verify_google_token(req.credential)
-    google_id = id_info.get("sub")
+    google_sub = id_info.get("sub")
     email = id_info.get("email")
     name = id_info.get("name") or email.split("@")[0]
+    picture = id_info.get("picture")
 
-    if not google_id or not email:
+    if not google_sub or not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid Google token payload.",
@@ -119,8 +131,12 @@ def google_auth(req: GoogleAuthRequest, response: Response, db: Session = Depend
 
     email = email.lower().strip()
 
-    # 1. Check if user already exists by google_id
-    user = db.query(User).filter(User.google_id == google_id).first()
+    # 1. Check if user already exists by google_sub or google_id
+    user = (
+        db.query(User)
+        .filter((User.google_sub == google_sub) | (User.google_id == google_sub))
+        .first()
+    )
 
     if user:
         if user.status == UserStatus.BANNED:
@@ -128,31 +144,54 @@ def google_auth(req: GoogleAuthRequest, response: Response, db: Session = Depend
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Please contact support.",
             )
+        # Ensure google_sub is populated and avatar is synced if not customized
+        updated = False
+        if not user.google_sub:
+            user.google_sub = google_sub
+            updated = True
+        if picture and (not user.avatar or user.avatar == "/default-avatar.svg"):
+            user.avatar = picture
+            updated = True
+        if updated:
+            db.commit()
+            db.refresh(user)
     else:
-        # 2. Check if email exists with local provider
+        # 2. Check if email exists
         existing_email_user = db.query(User).filter(User.email == email).first()
         if existing_email_user:
-            if existing_email_user.auth_provider == AuthProvider.LOCAL:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="An account with this email was registered using email/password. Please log in using your password.",
-                )
+            existing_email_user.google_sub = google_sub
+            existing_email_user.google_id = google_sub
+            if picture and (not existing_email_user.avatar or existing_email_user.avatar == "/default-avatar.svg"):
+                existing_email_user.avatar = picture
+            db.commit()
+            db.refresh(existing_email_user)
             user = existing_email_user
         else:
-            # 3. Create new user with Google auth provider
+            # 3. Create brand new user with 10 Time Credits
             user = User(
                 name=name.strip(),
                 email=email,
                 auth_provider=AuthProvider.GOOGLE,
-                google_id=google_id,
+                google_sub=google_sub,
+                google_id=google_sub,
+                avatar=picture or "/default-avatar.svg",
+                location="Community Member",
+                bio="",
+                availability="[]",
                 role=UserRole.USER,
                 status=UserStatus.ACTIVE,
+                time_credits=10.0,
+                in_escrow=0.0,
+                lifetime_earned=0.0,
+                lifetime_spent=0.0,
+                onboarding_completed=0,
+                rating=5.0,
             )
             db.add(user)
             db.commit()
             db.refresh(user)
 
-    # Issue JWT & set cookie
+    # Issue JWT & set cookie for THIS specific user
     token = create_access_token({"sub": str(user.user_id), "email": user.email, "role": user.role.value})
     set_auth_cookie(response, token)
 

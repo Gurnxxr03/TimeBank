@@ -12,6 +12,9 @@ from app.dependencies import verify_token
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
+import json
+
+
 @router.get("/me", response_model=UserProfileResponse)
 def get_current_user_profile(
     current_user: User = Depends(verify_token),
@@ -32,6 +35,13 @@ def get_current_user_profile(
             detail="User profile not found.",
         )
 
+    availability_list = []
+    if user.availability:
+        try:
+            availability_list = json.loads(user.availability) if isinstance(user.availability, str) and user.availability.startswith("[") else [user.availability]
+        except Exception:
+            availability_list = []
+
     return UserProfileResponse(
         user_id=user.user_id,
         name=user.name,
@@ -39,7 +49,16 @@ def get_current_user_profile(
         role=user.role,
         status=user.status,
         auth_provider=user.auth_provider,
-        rating=user.rating,
+        avatar=user.avatar or "/default-avatar.svg",
+        location=user.location or "Community Member",
+        bio=user.bio or "",
+        time_credits=user.time_credits if user.time_credits is not None else 10.0,
+        in_escrow=user.in_escrow if user.in_escrow is not None else 0.0,
+        lifetime_earned=user.lifetime_earned if user.lifetime_earned is not None else 0.0,
+        lifetime_spent=user.lifetime_spent if user.lifetime_spent is not None else 0.0,
+        onboarding_completed=bool(user.onboarding_completed),
+        availability=availability_list,
+        rating=user.rating if user.rating is not None else 5.0,
         created_at=user.created_at,
         skills=[UserSkillResponse.model_validate(s) for s in user.user_skills],
     )
@@ -68,9 +87,26 @@ def update_current_user_profile(
 
     if req.name is not None and req.name.strip():
         user.name = req.name.strip()
+    if req.avatar is not None:
+        user.avatar = req.avatar
+    if req.location is not None:
+        user.location = req.location.strip()
+    if req.bio is not None:
+        user.bio = req.bio
+    if req.onboarding_completed is not None:
+        user.onboarding_completed = 1 if req.onboarding_completed else 0
+    if req.availability is not None:
+        user.availability = json.dumps(req.availability)
 
     db.commit()
     db.refresh(user)
+
+    availability_list = []
+    if user.availability:
+        try:
+            availability_list = json.loads(user.availability) if isinstance(user.availability, str) and user.availability.startswith("[") else [user.availability]
+        except Exception:
+            availability_list = []
 
     return UserProfileResponse(
         user_id=user.user_id,
@@ -79,7 +115,16 @@ def update_current_user_profile(
         role=user.role,
         status=user.status,
         auth_provider=user.auth_provider,
-        rating=user.rating,
+        avatar=user.avatar or "/default-avatar.svg",
+        location=user.location or "Community Member",
+        bio=user.bio or "",
+        time_credits=user.time_credits if user.time_credits is not None else 10.0,
+        in_escrow=user.in_escrow if user.in_escrow is not None else 0.0,
+        lifetime_earned=user.lifetime_earned if user.lifetime_earned is not None else 0.0,
+        lifetime_spent=user.lifetime_spent if user.lifetime_spent is not None else 0.0,
+        onboarding_completed=bool(user.onboarding_completed),
+        availability=availability_list,
+        rating=user.rating if user.rating is not None else 5.0,
         created_at=user.created_at,
         skills=[UserSkillResponse.model_validate(s) for s in user.user_skills],
     )

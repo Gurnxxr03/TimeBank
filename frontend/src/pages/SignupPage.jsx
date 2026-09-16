@@ -38,8 +38,14 @@ export default function SignupPage({ onNavigate }) {
     try {
       setLoading(true);
       setError(null);
-      await googleLogin(credential);
-      onNavigate('onboarding');
+      const profile = await googleLogin(credential);
+      if (profile?.role === 'admin') {
+        onNavigate('admin');
+      } else if (!profile?.onboarding_completed) {
+        onNavigate('onboarding');
+      } else {
+        onNavigate('dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Google signup failed.');
     } finally {

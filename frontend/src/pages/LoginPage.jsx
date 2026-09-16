@@ -20,10 +20,11 @@ export default function LoginPage({ onNavigate }) {
     try {
       setLoading(true);
       setError(null);
-      await login(email, password);
-      // AuthContext will update user state; default to dashboard (or admin if admin)
-      if (email.toLowerCase().includes('admin')) {
+      const profile = await login(email, password);
+      if (profile?.role === 'admin') {
         onNavigate('admin');
+      } else if (!profile?.onboarding_completed) {
+        onNavigate('onboarding');
       } else {
         onNavigate('dashboard');
       }
@@ -38,8 +39,14 @@ export default function LoginPage({ onNavigate }) {
     try {
       setLoading(true);
       setError(null);
-      await googleLogin(credential);
-      onNavigate('dashboard');
+      const profile = await googleLogin(credential);
+      if (profile?.role === 'admin') {
+        onNavigate('admin');
+      } else if (!profile?.onboarding_completed) {
+        onNavigate('onboarding');
+      } else {
+        onNavigate('dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Google authentication failed.');
     } finally {

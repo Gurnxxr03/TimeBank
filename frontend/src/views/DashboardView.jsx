@@ -206,13 +206,19 @@ export default function DashboardView() {
                   <span className="material-symbols-outlined text-[16px]">volunteer_activism</span>
                   I can teach ({user.skillsOffered.length})
                 </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {user.skillsOffered.map((sk) => (
-                    <span key={sk.id} className="px-3 py-1 bg-white/60 text-on-surface text-xs rounded-full border border-white font-medium">
-                      {sk.name || sk.title}
-                    </span>
-                  ))}
-                </div>
+                {user.skillsOffered.length === 0 ? (
+                  <p className="text-[11px] text-on-surface-variant/80 italic py-1">
+                    No skills offered yet. Click "Offer a Skill" above to share your talents!
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.skillsOffered.map((sk) => (
+                      <span key={sk.id} className="px-3 py-1 bg-white/60 text-on-surface text-xs rounded-full border border-white font-medium">
+                        {sk.name || sk.title}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="bg-white/30 p-4 rounded-2xl border border-glass-border">
@@ -220,13 +226,19 @@ export default function DashboardView() {
                   <span className="material-symbols-outlined text-[16px]">school</span>
                   I want to learn ({user.skillsWanted.length})
                 </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {user.skillsWanted.map((sk) => (
-                    <span key={sk.id} className="px-3 py-1 bg-white/60 text-on-surface text-xs rounded-full border border-white font-medium">
-                      {sk.name}
-                    </span>
-                  ))}
-                </div>
+                {user.skillsWanted.length === 0 ? (
+                  <p className="text-[11px] text-on-surface-variant/80 italic py-1">
+                    No learning goals added yet. Click "Edit Preferences" to add skills you want to learn!
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.skillsWanted.map((sk) => (
+                      <span key={sk.id} className="px-3 py-1 bg-white/60 text-on-surface text-xs rounded-full border border-white font-medium">
+                        {sk.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </section>
@@ -250,28 +262,40 @@ export default function DashboardView() {
             </div>
 
             <div className="space-y-3">
-              {learningTrackers.map((tracker) => (
-                <div
-                  key={tracker.id}
-                  className="bg-white/40 border border-white/70 p-4 rounded-2xl flex gap-3 items-center hover:bg-white/60 transition-colors cursor-pointer"
-                  onClick={() => setCurrentView('my-skills')}
-                >
-                  <div className="w-11 h-11 rounded-xl bg-primary-container/40 text-primary flex flex-col items-center justify-center flex-shrink-0 font-bold">
-                    <span className="text-[10px] uppercase">Oct</span>
-                    <span className="text-base leading-none">12</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-headline-md text-xs font-bold text-on-surface truncate">
-                      {tracker.title}
-                    </p>
-                    <p className="text-[11px] text-on-surface-variant flex items-center gap-1 mt-0.5">
-                      <span className="material-symbols-outlined text-[12px]">schedule</span>
-                      <span>{tracker.nextSession}</span>
-                    </p>
-                    <span className="text-[10px] text-primary font-semibold">with {tracker.partner}</span>
-                  </div>
+              {learningTrackers.length === 0 ? (
+                <div className="p-4 bg-white/30 rounded-2xl text-center text-xs text-on-surface-variant">
+                  <p className="font-medium">No upcoming sessions yet.</p>
+                  <button 
+                    onClick={() => setCurrentView('discover')} 
+                    className="text-primary font-bold hover:underline mt-1 inline-block"
+                  >
+                    Find a skill to swap
+                  </button>
                 </div>
-              ))}
+              ) : (
+                learningTrackers.map((tracker) => (
+                  <div
+                    key={tracker.id}
+                    className="bg-white/40 border border-white/70 p-4 rounded-2xl flex gap-3 items-center hover:bg-white/60 transition-colors cursor-pointer"
+                    onClick={() => setCurrentView('my-skills')}
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-primary-container/40 text-primary flex flex-col items-center justify-center flex-shrink-0 font-bold">
+                      <span className="text-[10px] uppercase">Session</span>
+                      <span className="text-base leading-none">#1</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-headline-md text-xs font-bold text-on-surface truncate">
+                        {tracker.title}
+                      </p>
+                      <p className="text-[11px] text-on-surface-variant flex items-center gap-1 mt-0.5">
+                        <span className="material-symbols-outlined text-[12px]">schedule</span>
+                        <span>{tracker.nextSession}</span>
+                      </p>
+                      <span className="text-[10px] text-primary font-semibold">with {tracker.partner}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </section>
 
@@ -290,39 +314,46 @@ export default function DashboardView() {
               </button>
             </div>
 
-            <ul className="space-y-3">
-              {transactions.slice(0, 4).map((tx) => (
-                <li
-                  key={tx.id}
-                  className="flex items-center justify-between pb-2.5 border-b border-white/30 last:border-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
-                      tx.type === 'earned' 
-                        ? 'bg-pastel-mint text-primary' 
-                        : tx.type === 'spent' 
-                        ? 'bg-error-container/40 text-error' 
-                        : 'bg-tertiary-container/40 text-tertiary'
+            {transactions.length === 0 ? (
+              <div className="p-4 bg-white/30 rounded-2xl text-center text-xs text-on-surface-variant">
+                <p className="font-medium">No transactions recorded yet.</p>
+                <p className="text-[11px] text-on-surface-variant/70 mt-0.5">Your credit ledger will show swaps and escrow transfers here.</p>
+              </div>
+            ) : (
+              <ul className="space-y-3">
+                {transactions.slice(0, 4).map((tx) => (
+                  <li
+                    key={tx.id}
+                    className="flex items-center justify-between pb-2.5 border-b border-white/30 last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                        tx.type === 'earned' 
+                          ? 'bg-pastel-mint text-primary' 
+                          : tx.type === 'spent' 
+                          ? 'bg-error-container/40 text-error' 
+                          : 'bg-tertiary-container/40 text-tertiary'
+                      }`}>
+                        <span className="material-symbols-outlined text-[14px]">
+                          {tx.type === 'earned' ? 'add' : tx.type === 'spent' ? 'remove' : 'lock_clock'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold text-on-surface truncate max-w-[140px]">
+                          {tx.title}
+                        </p>
+                        <p className="text-[10px] text-on-surface-variant">{tx.date}</p>
+                      </div>
+                    </div>
+                    <span className={`text-xs font-bold ${
+                      tx.type === 'earned' ? 'text-primary' : tx.type === 'spent' ? 'text-on-surface-variant' : 'text-tertiary'
                     }`}>
-                      <span className="material-symbols-outlined text-[14px]">
-                        {tx.type === 'earned' ? 'add' : tx.type === 'spent' ? 'remove' : 'lock_clock'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-on-surface truncate max-w-[140px]">
-                        {tx.title}
-                      </p>
-                      <p className="text-[10px] text-on-surface-variant">{tx.date}</p>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-bold ${
-                    tx.type === 'earned' ? 'text-primary' : tx.type === 'spent' ? 'text-on-surface-variant' : 'text-tertiary'
-                  }`}>
-                    {tx.type === 'earned' ? `+${tx.hours}` : tx.type === 'spent' ? `-${tx.hours}` : `${tx.hours} in escrow`}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                      {tx.type === 'earned' ? `+${tx.hours}` : tx.type === 'spent' ? `-${tx.hours}` : `${tx.hours} in escrow`}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </div>
       </div>

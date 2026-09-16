@@ -76,10 +76,21 @@ def seed_database():
                 status=UserStatus.ACTIVE,
                 auth_provider=AuthProvider.LOCAL,
                 rating=5.0,
+                time_credits=100.0,
+                in_escrow=0.0,
+                lifetime_earned=0.0,
+                lifetime_spent=0.0,
+                onboarding_completed=1,
+                avatar="/default-avatar.svg",
+                location="TimeBank HQ",
+                bio="Platform Administrator & System Monitor",
             )
             db.add(admin)
             print(f"  + Created Admin: {admin_email} (Password: AdminPassword123!)")
         else:
+            if existing_admin.time_credits is None:
+                existing_admin.time_credits = 100.0
+            existing_admin.onboarding_completed = 1
             print(f"  = Admin {admin_email} already exists.")
 
         # 3. Seed Demo Regular User
@@ -94,6 +105,14 @@ def seed_database():
                 status=UserStatus.ACTIVE,
                 auth_provider=AuthProvider.LOCAL,
                 rating=4.9,
+                time_credits=10.0,
+                in_escrow=0.0,
+                lifetime_earned=0.0,
+                lifetime_spent=0.0,
+                onboarding_completed=1,
+                avatar="/default-avatar.svg",
+                location="Indiranagar, Bengaluru, KA",
+                bio="Passionate web developer and community organizer.",
             )
             db.add(demo_user)
             db.flush()
@@ -115,6 +134,9 @@ def seed_database():
                 ))
             print(f"  + Created Demo User: {demo_email} (Password: Password123!) with 2 skills")
         else:
+            if existing_demo.time_credits is None:
+                existing_demo.time_credits = 10.0
+            existing_demo.onboarding_completed = 1
             print(f"  = Demo user {demo_email} already exists.")
 
         db.commit()

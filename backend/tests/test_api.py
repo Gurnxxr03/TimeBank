@@ -41,7 +41,7 @@ client = TestClient(app)
 
 
 def test_auth_flow_and_profile():
-    # 1. Signup
+    # 1. Signup - Should start with 10.0 Time Credits
     signup_res = client.post(
         "/auth/signup",
         json={"name": "Sarah Connor", "email": "sarah@example.com", "password": "Password123!"}
@@ -51,6 +51,8 @@ def test_auth_flow_and_profile():
     data = signup_res.json()
     assert data["user"]["name"] == "Sarah Connor"
     assert data["user"]["role"] == "user"
+    assert data["user"]["time_credits"] == 10.0
+    assert data["user"]["onboarding_completed"] is False
 
     # 2. Duplicate Signup Rejection
     dup_res = client.post(
@@ -63,11 +65,25 @@ def test_auth_flow_and_profile():
     me_res = client.get("/users/me")
     assert me_res.status_code == 200
     assert me_res.json()["email"] == "sarah@example.com"
+    assert me_res.json()["time_credits"] == 10.0
+    assert me_res.json()["onboarding_completed"] is False
 
-    # 4. Update Profile PUT /users/me
-    update_res = client.put("/users/me", json={"name": "Sarah J. Connor"})
+    # 4. Update Profile PUT /users/me (including location, bio, onboarding_completed, avatar)
+    update_res = client.put("/users/me", json={
+        "name": "Sarah J. Connor",
+        "bio": "Resistance fighter and mechanics enthusiast.",
+        "location": "Los Angeles, CA",
+        "onboarding_completed": True,
+        "avatar": "/custom-avatar.png",
+        "availability": ["Weekday Evenings", "Saturdays"]
+    })
     assert update_res.status_code == 200
     assert update_res.json()["name"] == "Sarah J. Connor"
+    assert update_res.json()["bio"] == "Resistance fighter and mechanics enthusiast."
+    assert update_res.json()["location"] == "Los Angeles, CA"
+    assert update_res.json()["onboarding_completed"] is True
+    assert update_res.json()["avatar"] == "/custom-avatar.png"
+    assert "Saturdays" in update_res.json()["availability"]
 
     # 5. Logout
     logout_res = client.post("/auth/logout")
@@ -77,13 +93,16 @@ def test_auth_flow_and_profile():
     me_after_logout = client.get("/users/me")
     assert me_after_logout.status_code == 401
 
-    # 7. Login again
+    # 7. Login again - Verify persisted profile and preserved 10.0 credits
     login_res = client.post(
         "/auth/login",
         json={"email": "sarah@example.com", "password": "Password123!"}
     )
     assert login_res.status_code == 200
     assert "access_token" in login_res.cookies
+    assert login_res.json()["user"]["name"] == "Sarah J. Connor"
+    assert login_res.json()["user"]["time_credits"] == 10.0
+    assert login_res.json()["user"]["onboarding_completed"] is True
 
 
 def test_skills_and_user_skills():

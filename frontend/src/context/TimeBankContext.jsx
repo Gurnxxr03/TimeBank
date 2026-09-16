@@ -7,38 +7,83 @@ const TimeBankContext = createContext();
 
 export const DEFAULT_BLANK_AVATAR = '/default-avatar.svg';
 
-const INITIAL_USER = {
-  id: 'usr_me',
-  fullName: 'Aarav Sharma',
-  role: 'member',
-  location: 'Indiranagar, Bengaluru, KA',
-  distance: '2.4 km away',
-  avatar: DEFAULT_BLANK_AVATAR,
-  bio: 'Passionate about sustainable living, UI design, and community terrace gardening. Love teaching web tech and eager to learn musical instruments and languages!',
-  balance: 24.5,
-  inEscrow: 4.0,
-  lifetimeEarned: 128.5,
-  lifetimeSpent: 104.0,
-  decayWarning: {
-    amount: 3.0,
-    expiryDate: 'Oct 15, 2026',
-    reason: '12-Month Inactivity Decay Policy. Use them soon to maximize community impact!'
-  },
-  rating: 4.9,
-  reviewsCount: 14,
-  skillsOffered: [
-    { id: 'sk1', name: 'UI & Web Design', category: 'Design', level: 'Expert', icon: 'design_services' },
-    { id: 'sk2', name: 'Photography', category: 'Creative', level: 'Intermediate', icon: 'photo_camera' },
-    { id: 'sk3', name: 'Web Dev Mentorship', category: 'Development', level: 'Expert', icon: 'code' },
-    { id: 'sk4', name: 'Terrace Gardening', category: 'Lifestyle', level: 'Intermediate', icon: 'yard' },
-  ],
-  skillsWanted: [
-    { id: 'skw1', name: 'Hindi & Spanish Tutoring', category: 'Languages', icon: 'language' },
-    { id: 'skw2', name: 'Cooking Lessons', category: 'Culinary', icon: 'restaurant_menu' },
-    { id: 'skw3', name: 'Harmonium & Keyboard', category: 'Music', icon: 'piano' },
-    { id: 'skw4', name: 'Basic Woodworking', category: 'Crafts', icon: 'carpenter' }
-  ],
-  availability: ['Saturdays', 'Weekday Evenings']
+export const buildUserState = (authUser) => {
+  if (!authUser) {
+    return {
+      id: null,
+      fullName: '',
+      email: '',
+      role: 'user',
+      location: 'Community Member',
+      distance: '',
+      avatar: DEFAULT_BLANK_AVATAR,
+      bio: '',
+      balance: 10.0,
+      inEscrow: 0.0,
+      lifetimeEarned: 0.0,
+      lifetimeSpent: 0.0,
+      rating: 5.0,
+      reviewsCount: 0,
+      onboardingCompleted: false,
+      skillsOffered: [],
+      skillsWanted: [],
+      availability: ['Saturdays', 'Weekday Evenings']
+    };
+  }
+
+  const offered = Array.isArray(authUser.skills)
+    ? authUser.skills
+        .filter(s => s.type === 'offering')
+        .map(s => ({
+          id: s.id,
+          userSkillId: s.id,
+          skillId: s.skill_id,
+          name: s.skill?.name || 'Skill',
+          category: s.skill?.category || 'General',
+          level: s.proficiency || 'Intermediate',
+          icon: 'school'
+        }))
+    : [];
+
+  const wanted = Array.isArray(authUser.skills)
+    ? authUser.skills
+        .filter(s => s.type === 'seeking')
+        .map(s => ({
+          id: s.id,
+          userSkillId: s.id,
+          skillId: s.skill_id,
+          name: s.skill?.name || 'Skill',
+          category: s.skill?.category || 'General',
+          level: s.proficiency || 'Beginner',
+          icon: 'search'
+        }))
+    : [];
+
+  let availability = ['Saturdays', 'Weekday Evenings'];
+  if (Array.isArray(authUser.availability) && authUser.availability.length > 0) {
+    availability = authUser.availability;
+  }
+
+  return {
+    id: authUser.user_id,
+    fullName: authUser.name || 'Member',
+    email: authUser.email || '',
+    role: authUser.role || 'user',
+    location: authUser.location || 'Community Member',
+    distance: '0 km away',
+    avatar: authUser.avatar || DEFAULT_BLANK_AVATAR,
+    bio: authUser.bio || '',
+    balance: typeof authUser.time_credits === 'number' ? authUser.time_credits : 10.0,
+    inEscrow: typeof authUser.in_escrow === 'number' ? authUser.in_escrow : 0.0,
+    lifetimeEarned: typeof authUser.lifetime_earned === 'number' ? authUser.lifetime_earned : 0.0,
+    lifetimeSpent: typeof authUser.lifetime_spent === 'number' ? authUser.lifetime_spent : 0.0,
+    rating: typeof authUser.rating === 'number' ? authUser.rating : 5.0,
+    reviewsCount: 0,
+    onboardingCompleted: Boolean(authUser.onboarding_completed),
+    skillsOffered: offered,
+    skillsWanted: wanted,
+    availability: availability
+  };
 };
 
 const INITIAL_MEMBERS = [
@@ -256,32 +301,33 @@ const INITIAL_NOTIFICATIONS = [
 export function TimeBankProvider({ children }) {
   const { user: authUser, logout: authLogout, refreshUser } = useAuth();
 
-  // Primary state
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('timebank_user_v2');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (_e) {}
-    }
-    return INITIAL_USER;
-  });
+  // Primary state strictly derived and bound to authenticated user
+  const [user, setUser] = useState(() => buildUserState(authUser));
 
-  const [members, setMembers] = useState(() => {
-    const saved = localStorage.getItem('timebank_members_v2');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (_e) {}
-    }
-    return INITIAL_MEMBERS;
-  });
+  const [members, setMembers] = useState(INITIAL_MEMBERS);
 
+  // Transactions scoped to authenticated user ID
   const [transactions, setTransactions] = useState(() => {
-    const saved = localStorage.getItem('timebank_txs_v2');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (_e) {}
+    if (authUser?.user_id) {
+      const saved = localStorage.getItem(`timebank_txs_${authUser.user_id}`);
+      if (saved) {
+        try { return JSON.parse(saved); } catch (_e) {}
+      }
     }
-    return INITIAL_TRANSACTIONS;
+    return [];
   });
 
-  const [learningTrackers, setLearningTrackers] = useState(INITIAL_LEARNING_TRACKERS);
+  // Learning trackers scoped to authenticated user ID
+  const [learningTrackers, setLearningTrackers] = useState(() => {
+    if (authUser?.user_id) {
+      const saved = localStorage.getItem(`timebank_trackers_${authUser.user_id}`);
+      if (saved) {
+        try { return JSON.parse(saved); } catch (_e) {}
+      }
+    }
+    return [];
+  });
+
   const [teachingTrackers, setTeachingTrackers] = useState(INITIAL_TEACHING_TRACKERS);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
 
@@ -300,83 +346,41 @@ export function TimeBankProvider({ children }) {
   const [notificationsDrawerOpen, setNotificationsDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Hydrate user from authenticated backend user
+  // Sync user state whenever authUser changes
   useEffect(() => {
-    if (authUser) {
-      setUser(prev => {
-        let backendOffered = prev.skillsOffered;
-        let backendWanted = prev.skillsWanted;
+    setUser(buildUserState(authUser));
+    if (authUser?.user_id) {
+      const savedTxs = localStorage.getItem(`timebank_txs_${authUser.user_id}`);
+      if (savedTxs) {
+        try { setTransactions(JSON.parse(savedTxs)); } catch (_e) { setTransactions([]); }
+      } else {
+        setTransactions([]);
+      }
 
-        if (Array.isArray(authUser.skills) && authUser.skills.length > 0) {
-          backendOffered = authUser.skills
-            .filter(s => s.type === 'offering')
-            .map(s => ({
-              id: s.id,
-              userSkillId: s.id,
-              skillId: s.skill_id,
-              name: s.skill?.name || 'Skill',
-              category: s.skill?.category || 'General',
-              level: s.proficiency || 'Intermediate',
-              icon: 'school'
-            }));
-
-          const wanted = authUser.skills
-            .filter(s => s.type === 'seeking')
-            .map(s => ({
-              id: s.id,
-              userSkillId: s.id,
-              skillId: s.skill_id,
-              name: s.skill?.name || 'Skill',
-              category: s.skill?.category || 'General',
-              level: s.proficiency || 'Beginner',
-              icon: 'search'
-            }));
-
-          if (wanted.length > 0) backendWanted = wanted;
-        }
-
-        return {
-          ...prev,
-          id: authUser.user_id,
-          fullName: authUser.name || prev.fullName,
-          email: authUser.email || prev.email,
-          role: authUser.role || prev.role,
-          rating: authUser.rating || prev.rating || 5.0,
-          skillsOffered: backendOffered.length > 0 ? backendOffered : prev.skillsOffered,
-          skillsWanted: backendWanted.length > 0 ? backendWanted : prev.skillsWanted,
-        };
-      });
+      const savedTrackers = localStorage.getItem(`timebank_trackers_${authUser.user_id}`);
+      if (savedTrackers) {
+        try { setLearningTrackers(JSON.parse(savedTrackers)); } catch (_e) { setLearningTrackers([]); }
+      } else {
+        setLearningTrackers([]);
+      }
+    } else {
+      setTransactions([]);
+      setLearningTrackers([]);
     }
   }, [authUser]);
 
-  // Fetch backend skill catalog
-  const loadCatalog = useCallback(async () => {
-    try {
-      const data = await skillsApi.getCatalog();
-      if (Array.isArray(data)) {
-        setCatalogSkills(data);
-      }
-    } catch (_err) {
-      // Offline fallback
+  // Save user-scoped data
+  useEffect(() => {
+    if (authUser?.user_id) {
+      localStorage.setItem(`timebank_txs_${authUser.user_id}`, JSON.stringify(transactions));
     }
-  }, []);
+  }, [transactions, authUser?.user_id]);
 
   useEffect(() => {
-    loadCatalog();
-  }, [loadCatalog]);
-
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('timebank_user_v2', JSON.stringify(user));
-  }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem('timebank_members_v2', JSON.stringify(members));
-  }, [members]);
-
-  useEffect(() => {
-    localStorage.setItem('timebank_txs_v2', JSON.stringify(transactions));
-  }, [transactions]);
+    if (authUser?.user_id) {
+      localStorage.setItem(`timebank_trackers_${authUser.user_id}`, JSON.stringify(learningTrackers));
+    }
+  }, [learningTrackers, authUser?.user_id]);
 
   // Toast helper
   const showToast = (title, message, type = 'success') => {
@@ -636,10 +640,18 @@ export function TimeBankProvider({ children }) {
   const updateProfile = async (updatedData) => {
     setUser(prev => ({ ...prev, ...updatedData }));
 
-    if (authUser && updatedData.fullName) {
+    if (authUser) {
       try {
-        await userApi.updateProfile({ name: updatedData.fullName });
-        if (refreshUser) refreshUser();
+        const payload = {};
+        if (updatedData.fullName !== undefined) payload.name = updatedData.fullName;
+        if (updatedData.avatar !== undefined) payload.avatar = updatedData.avatar;
+        if (updatedData.location !== undefined) payload.location = updatedData.location;
+        if (updatedData.bio !== undefined) payload.bio = updatedData.bio;
+        if (updatedData.onboardingCompleted !== undefined) payload.onboarding_completed = updatedData.onboardingCompleted;
+        if (updatedData.availability !== undefined) payload.availability = updatedData.availability;
+
+        await userApi.updateProfile(payload);
+        if (refreshUser) await refreshUser();
       } catch (err) {
         console.warn('Backend profile update note:', err.message);
       }
@@ -657,6 +669,9 @@ export function TimeBankProvider({ children }) {
 
   const handleLogout = async () => {
     await authLogout();
+    setUser(buildUserState(null));
+    setTransactions([]);
+    setLearningTrackers([]);
     setCurrentView('landing');
     showToast('Signed Out', 'You have been logged out of TimeBank.');
   };
