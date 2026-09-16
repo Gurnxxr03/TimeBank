@@ -21,7 +21,12 @@ export default function LoginPage({ onNavigate }) {
       setLoading(true);
       setError(null);
       await login(email, password);
-      onNavigate('dashboard');
+      // AuthContext will update user state; default to dashboard (or admin if admin)
+      if (email.toLowerCase().includes('admin')) {
+        onNavigate('admin');
+      } else {
+        onNavigate('dashboard');
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {

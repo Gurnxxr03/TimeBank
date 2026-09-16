@@ -9,7 +9,7 @@ services:
       MYSQL_USER: timebank_user
       MYSQL_PASSWORD: timebank_pass
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - timebank_mysql_data:/var/lib/mysql
     healthcheck:

@@ -26,7 +26,7 @@ export default function SignupPage({ onNavigate }) {
       setLoading(true);
       setError(null);
       await signup(name, email, password);
-      onNavigate('dashboard');
+      onNavigate('onboarding');
     } catch (err) {
       setError(err.message || 'Signup failed. Please try again.');
     } finally {
@@ -39,7 +39,7 @@ export default function SignupPage({ onNavigate }) {
       setLoading(true);
       setError(null);
       await googleLogin(credential);
-      onNavigate('dashboard');
+      onNavigate('onboarding');
     } catch (err) {
       setError(err.message || 'Google signup failed.');
     } finally {
