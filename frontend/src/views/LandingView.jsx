@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTimeBank } from '../context/TimeBankContext';
 
 export default function LandingView() {
-  const { setCurrentView, openBookingModal, members } = useTimeBank();
+  const { setCurrentView, openBookingModal, members, viewMemberProfile } = useTimeBank();
   const [calcHours, setCalcHours] = useState(3);
 
   return (
@@ -141,13 +141,17 @@ export default function LandingView() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {members.slice(0, 3).map((m) => (
+          {members.length === 0 ? (
+            <div className="md:col-span-3 glass-panel p-8 rounded-2xl text-center">
+              <p className="text-sm font-bold text-on-surface mb-1">Be among the first registered members!</p>
+              <p className="text-xs text-on-surface-variant">Create an account and list a skill to appear in the community directory.</p>
+            </div>
+          ) : (
+            members.slice(0, 3).map((m) => (
             <div
               key={m.id}
               className="glass-panel p-6 rounded-2xl flex flex-col justify-between hover:scale-[1.02] hover:bg-white/60 transition-all duration-300 group cursor-pointer"
-              onClick={() => {
-                setCurrentView('profile');
-              }}
+              onClick={() => viewMemberProfile(m.id)}
             >
               <div>
                 <div className="flex items-center gap-3 mb-4">
@@ -170,7 +174,9 @@ export default function LandingView() {
 
                 <div className="bg-white/30 p-2.5 rounded-xl border border-glass-border mb-4">
                   <span className="text-[11px] font-bold text-primary uppercase block mb-1">Teaches</span>
-                  <p className="text-xs font-semibold text-on-surface line-clamp-1">{m.skills[0]?.title}</p>
+                  <p className="text-xs font-semibold text-on-surface line-clamp-1">
+                    {m.skills[0]?.title || 'Registered Community Member'}
+                  </p>
                 </div>
 
                 <p className="text-xs text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">
@@ -189,7 +195,8 @@ export default function LandingView() {
                 <span className="material-symbols-outlined text-[16px]">handshake</span>
               </button>
             </div>
-          ))}
+          ))
+          )}
         </div>
       </section>
 

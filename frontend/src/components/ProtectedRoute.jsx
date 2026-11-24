@@ -1,8 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute({ children, requireAdmin = false, onNavigate }) {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user && onNavigate) {
+      onNavigate('login');
+    } else if (requireAdmin && user && user.role !== 'admin' && onNavigate) {
+      onNavigate('dashboard');
+    }
+  }, [user, loading, requireAdmin, onNavigate]);
 
   if (loading) {
     return (
@@ -13,19 +22,7 @@ export default function ProtectedRoute({ children, requireAdmin = false, onNavig
     );
   }
 
-  if (!user) {
-    if (onNavigate) {
-      onNavigate('login');
-      return null;
-    }
-    return null;
-  }
-
-  if (requireAdmin && user.role !== 'admin') {
-    if (onNavigate) {
-      onNavigate('dashboard');
-      return null;
-    }
+  if (!user || (requireAdmin && user.role !== 'admin')) {
     return null;
   }
 

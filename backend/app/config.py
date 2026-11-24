@@ -8,8 +8,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     COOKIE_SECURE: bool = False
+    COOKIE_SAMESITE: str = "lax"
     COOKIE_NAME: str = "access_token"
     FRONTEND_URL: str = "http://localhost:5173"
+    ALLOWED_ORIGINS: Optional[str] = None
     GOOGLE_CLIENT_ID: Optional[str] = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

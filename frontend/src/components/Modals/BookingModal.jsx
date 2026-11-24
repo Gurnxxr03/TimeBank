@@ -11,10 +11,11 @@ export default function BookingModal() {
 
   const { isOpen, member, skill } = bookingModalState;
 
-  const [selectedDate, setSelectedDate] = useState('Saturday, 22 August');
+  const [selectedDate, setSelectedDate] = useState('Saturday, Next Week');
   const [selectedTime, setSelectedTime] = useState('5:00 PM – 6:00 PM');
   const [selectedFormat, setSelectedFormat] = useState('Online');
   const [cost] = useState(1.0);
+  const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen || !member) return null;
 
@@ -22,15 +23,20 @@ export default function BookingModal() {
   const balanceAfter = Math.max(0, Number((currentBalance - cost).toFixed(1)));
   const canAfford = currentBalance >= cost;
 
-  const handleConfirm = () => {
-    confirmBooking({
-      member,
-      skill: skill || { title: 'General Mentorship Session', icon: 'school' },
-      date: selectedDate,
-      time: selectedTime,
-      format: selectedFormat,
-      cost
-    });
+  const handleConfirm = async () => {
+    setSubmitting(true);
+    try {
+      await confirmBooking({
+        member,
+        skill: skill || { title: 'General Mentorship Session', icon: 'school' },
+        date: selectedDate,
+        time: selectedTime,
+        format: selectedFormat,
+        cost
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -89,10 +95,10 @@ export default function BookingModal() {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full bg-white/40 border border-glass-border rounded-xl px-3 py-2 text-xs font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value="Saturday, 22 August">Saturday, 22 August</option>
-                <option value="Sunday, 23 August">Sunday, 23 August</option>
-                <option value="Tuesday, 25 August">Tuesday, 25 August</option>
-                <option value="Thursday, 27 August">Thursday, 27 August</option>
+                <option value="Saturday, Next Week">Saturday, Next Week</option>
+                <option value="Sunday, Next Week">Sunday, Next Week</option>
+                <option value="Tuesday Evening">Tuesday Evening</option>
+                <option value="Thursday Evening">Thursday Evening</option>
               </select>
             </div>
 
@@ -161,14 +167,14 @@ export default function BookingModal() {
         <div className="flex flex-col gap-2.5">
           <button
             onClick={handleConfirm}
-            disabled={!canAfford}
+            disabled={!canAfford || submitting}
             className={`w-full font-label-sm text-sm font-bold py-3.5 px-6 rounded-full shadow-md transition-all duration-300 flex justify-center items-center gap-2 ${
-              canAfford
+              canAfford && !submitting
                 ? 'bg-primary text-white hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/25 cursor-pointer active:scale-[0.99]'
                 : 'bg-outline-variant/50 text-on-surface-variant cursor-not-allowed'
             }`}
           >
-            <span>{canAfford ? 'Confirm Booking' : 'Insufficient Credits'}</span>
+            <span>{submitting ? 'Confirming...' : canAfford ? 'Confirm Booking' : 'Insufficient Credits'}</span>
             <span className="material-symbols-outlined text-[18px]">check_circle</span>
           </button>
 

@@ -6,7 +6,8 @@ export default function MySkillsView() {
     learningTrackers, 
     teachingTrackers, 
     transactions, 
-    releaseEscrowSession, 
+    releaseEscrowSession,
+    cancelBookingSession,
     setPostSkillModalOpen,
     setCurrentView 
   } = useTimeBank();
@@ -212,15 +213,25 @@ export default function MySkillsView() {
                     {tx.notes || `With ${tx.partner} (${tx.hours} credits held in escrow).`}
                   </p>
 
-                  <div className="flex justify-between items-center pt-2 border-t border-glass-border">
+                  <div className="flex justify-between items-center pt-2 border-t border-glass-border gap-2">
                     <span className="text-xs font-bold text-primary">{tx.hours} Credits</span>
-                    <button
-                      onClick={() => releaseEscrowSession(tx.id)}
-                      className="px-3 py-1.5 bg-primary text-white hover:bg-primary/90 rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">check</span>
-                      <span>Confirm & Release</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => cancelBookingSession(tx.bookingId || tx.id)}
+                        className="px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      {tx.isRequester && (
+                        <button
+                          onClick={() => releaseEscrowSession(tx.bookingId || tx.id)}
+                          className="px-3 py-1.5 bg-primary text-white hover:bg-primary/90 rounded-lg text-xs font-bold transition-colors shadow-xs flex items-center gap-1"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">check</span>
+                          <span>Confirm & Release</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

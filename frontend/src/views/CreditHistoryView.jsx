@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTimeBank } from '../context/TimeBankContext';
 
 export default function CreditHistoryView() {
-  const { user, setUser, transactions, setTransactions, setCurrentView, showToast, triggerConfetti } = useTimeBank();
+  const { user, transactions, setCurrentView, setPostSkillModalOpen } = useTimeBank();
   const [filterType, setFilterType] = useState('all');
 
-  const filteredTransactions = transactions.filter(t => {
+  const filteredTransactions = transactions.filter((t) => {
     if (filterType === 'all') return true;
     if (filterType === 'earned') return t.type === 'earned';
     if (filterType === 'spent') return t.type === 'spent';
@@ -13,31 +13,15 @@ export default function CreditHistoryView() {
     return true;
   });
 
-  // Simulation test to earn credits (e.g. completing a community mentorship task)
-  const simulateEarnCredit = () => {
-    const newBal = Number((user.balance + 1.0).toFixed(1));
-    const newLifetime = Number((user.lifetimeEarned + 1.0).toFixed(1));
-    setUser(prev => ({
-      ...prev,
-      balance: newBal,
-      lifetimeEarned: newLifetime
-    }));
+  const completedSessionsCount = useMemo(
+    () => transactions.filter((t) => t.status === 'Completed').length,
+    [transactions]
+  );
 
-    const newTx = {
-      id: `tx_${Date.now()}`,
-      title: 'Taught Community Web Workshop',
-      partner: 'Portland TimeBank Hub',
-      date: 'Just now',
-      hours: 1.0,
-      type: 'earned',
-      status: 'Completed',
-      notes: 'Introductory HTML & CSS open community session.'
-    };
-
-    setTransactions(prev => [newTx, ...prev]);
-    triggerConfetti();
-    showToast('Credits Deposited!', '+1.0 Time Credit added to your balance.');
-  };
+  const totalHoursExchanged = useMemo(
+    () => Number((user.lifetimeEarned + user.lifetimeSpent).toFixed(1)),
+    [user.lifetimeEarned, user.lifetimeSpent]
+  );
 
   return (
     <div className="pt-24 lg:pt-28 pb-28 px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto space-y-6">
@@ -53,15 +37,15 @@ export default function CreditHistoryView() {
         </div>
 
         <button
-          onClick={simulateEarnCredit}
+          onClick={() => setPostSkillModalOpen(true)}
           className="px-5 py-2.5 bg-secondary text-white rounded-full font-label-sm text-xs font-bold hover:bg-secondary/90 transition-all flex items-center gap-1.5 shadow-sm"
         >
           <span className="material-symbols-outlined text-base">volunteer_activism</span>
-          <span>Simulate Teaching (+1 Hr)</span>
+          <span>Offer a Skill to Earn</span>
         </button>
       </header>
 
-      {/* Top Bento Grid: Balance, Warning & Stats */}
+      {/* Top Bento Grid: Balance & Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Total Balance Card (Spans 2 cols) */}
         <div className="glass-card ambient-shadow rounded-3xl p-6 md:p-8 md:col-span-2 relative overflow-hidden flex flex-col justify-between">
@@ -83,24 +67,20 @@ export default function CreditHistoryView() {
             </div>
           </div>
 
-          {/* 12-Month Decay Warning Box */}
-          <div className="z-10 mt-6 bg-error-container/40 border border-error/20 rounded-2xl p-4 flex items-start gap-3">
-            <span className="material-symbols-outlined text-error mt-0.5 text-xl flex-shrink-0">
-              warning
-            </span>
-            <div className="flex-1">
-              <p className="font-label-sm text-xs text-error font-bold mb-0.5">
-                12-Month Decay Warning
+          <div className="z-10 mt-6 bg-pastel-mint/40 border border-primary/15 rounded-2xl p-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="font-label-sm text-xs text-primary font-bold mb-0.5">
+                Equal-Value Time Exchange
               </p>
-              <p className="font-body-md text-xs text-on-error-container leading-relaxed">
-                {(user.decayWarning && user.decayWarning.amount) || 3.0} hours will expire on {(user.decayWarning && user.decayWarning.expiryDate) || 'Oct 15, 2026'}. Use them soon by requesting a skill to maximize your community impact!
+              <p className="font-body-md text-xs text-on-surface-variant leading-relaxed">
+                Every 1 hour of service equals 1 Time Credit. Book sessions with community members or offer skills to earn more.
               </p>
             </div>
             <button
               onClick={() => setCurrentView('discover')}
-              className="px-3 py-1.5 bg-white/80 hover:bg-white text-error font-bold text-xs rounded-xl transition-all flex-shrink-0 border border-error/20"
+              className="px-4 py-2 bg-primary text-white font-bold text-xs rounded-xl transition-all flex-shrink-0"
             >
-              Use Now
+              Browse Skills
             </button>
           </div>
         </div>
@@ -140,25 +120,24 @@ export default function CreditHistoryView() {
         </div>
       </div>
 
-      {/* Contribution Stats & 7-Day Activity Chart */}
+      {/* Real Contribution Stats */}
       <div className="glass-card rounded-3xl p-6 md:p-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-2">
           <div>
             <h3 className="font-headline-md text-lg font-bold text-primary">Your Community Impact</h3>
-            <p className="text-xs text-on-surface-variant">Weekly hours exchanged and sessions completed</p>
-          </div>
-          <div className="bg-white/40 px-3 py-1 rounded-full text-xs font-semibold text-on-surface-variant border border-white/60">
-            This Month
+            <p className="text-xs text-on-surface-variant">Live metrics from your registered account & swaps</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white/30 rounded-2xl p-4 border border-white/50">
             <div className="flex items-center gap-2 mb-1 text-on-surface-variant text-xs">
               <span className="material-symbols-outlined text-secondary text-base">schedule</span>
-              <span>Time Shared</span>
+              <span>Total Time Exchanged</span>
             </div>
-            <p className="font-headline-md text-2xl font-bold text-primary">12 <span className="text-xs font-normal">hours</span></p>
+            <p className="font-headline-md text-2xl font-bold text-primary">
+              {totalHoursExchanged} <span className="text-xs font-normal">hours</span>
+            </p>
           </div>
 
           <div className="bg-white/30 rounded-2xl p-4 border border-white/50">
@@ -166,44 +145,19 @@ export default function CreditHistoryView() {
               <span className="material-symbols-outlined text-secondary text-base">handshake</span>
               <span>Sessions Completed</span>
             </div>
-            <p className="font-headline-md text-2xl font-bold text-primary">8 <span className="text-xs font-normal">sessions</span></p>
+            <p className="font-headline-md text-2xl font-bold text-primary">
+              {completedSessionsCount} <span className="text-xs font-normal">sessions</span>
+            </p>
           </div>
 
           <div className="bg-white/30 rounded-2xl p-4 border border-white/50">
             <div className="flex items-center gap-2 mb-1 text-on-surface-variant text-xs">
               <span className="material-symbols-outlined text-secondary text-base">school</span>
-              <span>Skills Shared</span>
+              <span>Skills Offered</span>
             </div>
-            <p className="font-headline-md text-2xl font-bold text-primary">4 <span className="text-xs font-normal">distinct skills</span></p>
-          </div>
-        </div>
-
-        {/* 7-Day Activity Bar Chart */}
-        <div className="pt-2">
-          <h4 className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-3">
-            Activity (Last 7 Days)
-          </h4>
-          <div className="flex items-end h-28 gap-2 md:gap-4 w-full bg-white/20 p-3 rounded-2xl border border-white/40">
-            {[
-              { day: 'Mon', hours: 0.5, height: '20%' },
-              { day: 'Tue', hours: 1.5, height: '40%' },
-              { day: 'Wed', hours: 0.0, height: '8%' },
-              { day: 'Thu', hours: 3.0, height: '80%' },
-              { day: 'Fri', hours: 2.0, height: '55%' },
-              { day: 'Sat', hours: 1.0, height: '30%' },
-              { day: 'Sun', hours: 4.0, height: '100%' },
-            ].map(col => (
-              <div key={col.day} className="flex-1 flex flex-col items-center h-full justify-end group">
-                <span className="text-[10px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity mb-1">
-                  {col.hours}h
-                </span>
-                <div 
-                  className="w-full bg-primary/40 group-hover:bg-primary rounded-t-lg transition-all"
-                  style={{ height: col.height }}
-                ></div>
-                <span className="text-[10px] font-semibold text-on-surface-variant mt-1.5">{col.day}</span>
-              </div>
-            ))}
+            <p className="font-headline-md text-2xl font-bold text-primary">
+              {user.skillsOffered.length} <span className="text-xs font-normal">active skills</span>
+            </p>
           </div>
         </div>
       </div>
@@ -213,7 +167,7 @@ export default function CreditHistoryView() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
           <div>
             <h3 className="font-headline-md text-xl font-bold text-on-surface">Transaction Ledger</h3>
-            <p className="text-xs text-on-surface-variant">Immutable record of community time transfers</p>
+            <p className="text-xs text-on-surface-variant">Database-backed record of your time transfers</p>
           </div>
 
           {/* Filter Pills */}
@@ -222,8 +176,8 @@ export default function CreditHistoryView() {
               { id: 'all', label: 'All' },
               { id: 'earned', label: 'Earned' },
               { id: 'spent', label: 'Spent' },
-              { id: 'escrow', label: 'In Escrow' }
-            ].map(f => (
+              { id: 'escrow', label: 'In Escrow' },
+            ].map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFilterType(f.id)}
@@ -240,55 +194,75 @@ export default function CreditHistoryView() {
         </div>
 
         {/* Transactions List */}
-        <div className="flex flex-col gap-3">
-          {filteredTransactions.map(tx => (
-            <div
-              key={tx.id}
-              className="flex items-center justify-between p-3.5 rounded-2xl hover:bg-white/40 border border-transparent hover:border-glass-border transition-all"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  tx.type === 'earned'
-                    ? 'bg-secondary-container text-on-secondary-container'
-                    : tx.type === 'spent'
-                    ? 'bg-surface-container-high text-on-surface-variant'
-                    : 'bg-tertiary-container/50 text-tertiary'
-                }`}>
-                  <span className="material-symbols-outlined text-base">
-                    {tx.type === 'earned' ? 'add' : tx.type === 'spent' ? 'remove' : 'lock_clock'}
+        {filteredTransactions.length === 0 ? (
+          <div className="text-center py-10 text-on-surface-variant">
+            <span className="material-symbols-outlined text-3xl opacity-40 mb-2">receipt_long</span>
+            <p className="text-sm font-semibold text-on-surface">No transactions yet</p>
+            <p className="text-xs mt-1">Book a skill swap or offer a skill to see your ledger activity.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {filteredTransactions.map((tx) => (
+              <div
+                key={tx.id}
+                className="flex items-center justify-between p-3.5 rounded-2xl hover:bg-white/40 border border-transparent hover:border-glass-border transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      tx.type === 'earned'
+                        ? 'bg-secondary-container text-on-secondary-container'
+                        : tx.type === 'spent'
+                        ? 'bg-surface-container-high text-on-surface-variant'
+                        : 'bg-tertiary-container/50 text-tertiary'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {tx.type === 'earned' ? 'add' : tx.type === 'spent' ? 'remove' : 'lock_clock'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <p className="font-body-md text-sm font-semibold text-on-surface leading-tight">
+                      {tx.title}
+                    </p>
+                    <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
+                      <span className="material-symbols-outlined text-[13px]">calendar_today</span>
+                      <span>
+                        {tx.date} • with {tx.partner}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <p
+                    className={`font-headline-md text-sm font-bold ${
+                      tx.type === 'earned'
+                        ? 'text-primary'
+                        : tx.type === 'spent'
+                        ? 'text-on-surface'
+                        : 'text-tertiary'
+                    }`}
+                  >
+                    {tx.type === 'earned' ? `+${tx.hours}` : tx.type === 'spent' ? `-${tx.hours}` : `${tx.hours}`} hrs
+                  </p>
+                  <span
+                    className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider mt-0.5 ${
+                      tx.type === 'earned'
+                        ? 'bg-secondary-container/60 text-on-secondary-container'
+                        : tx.type === 'spent'
+                        ? 'bg-surface-variant text-on-surface-variant'
+                        : 'bg-tertiary-container/40 text-tertiary'
+                    }`}
+                  >
+                    {tx.status}
                   </span>
                 </div>
-
-                <div>
-                  <p className="font-body-md text-sm font-semibold text-on-surface leading-tight">
-                    {tx.title}
-                  </p>
-                  <p className="text-xs text-on-surface-variant flex items-center gap-1 mt-0.5">
-                    <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                    <span>{tx.date} • with {tx.partner}</span>
-                  </p>
-                </div>
               </div>
-
-              <div className="text-right">
-                <p className={`font-headline-md text-sm font-bold ${
-                  tx.type === 'earned' ? 'text-primary' : tx.type === 'spent' ? 'text-on-surface' : 'text-tertiary'
-                }`}>
-                  {tx.type === 'earned' ? `+${tx.hours}` : tx.type === 'spent' ? `-${tx.hours}` : `${tx.hours}`} hrs
-                </p>
-                <span className={`inline-block px-2 py-0.5 text-[9px] font-bold rounded uppercase tracking-wider mt-0.5 ${
-                  tx.type === 'earned'
-                    ? 'bg-secondary-container/60 text-on-secondary-container'
-                    : tx.type === 'spent'
-                    ? 'bg-surface-variant text-on-surface-variant'
-                    : 'bg-tertiary-container/40 text-tertiary'
-                }`}>
-                  {tx.status}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

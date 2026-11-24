@@ -2,9 +2,29 @@ import React from 'react';
 import { useTimeBank } from '../context/TimeBankContext';
 
 export default function MemberProfileView() {
-  const { selectedMember, openBookingModal, members, viewMemberProfile } = useTimeBank();
+  const { selectedMember, openBookingModal, members, viewMemberProfile, setCurrentView } = useTimeBank();
 
   const member = selectedMember || members[0];
+
+  if (!member) {
+    return (
+      <div className="pt-28 pb-36 px-margin-mobile md:px-margin-desktop max-w-2xl mx-auto text-center">
+        <div className="glass-panel p-10 rounded-3xl">
+          <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3">person_search</span>
+          <h2 className="font-headline-md text-xl font-bold text-on-surface mb-2">No Registered Members Found</h2>
+          <p className="text-xs text-on-surface-variant mb-6">
+            Registered community members and their offered skills will appear here.
+          </p>
+          <button
+            onClick={() => setCurrentView('discover')}
+            className="px-6 py-2.5 bg-primary text-white rounded-full text-xs font-bold"
+          >
+            Back to Discover
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-24 lg:pt-28 pb-36 px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto">

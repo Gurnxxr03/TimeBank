@@ -39,3 +39,19 @@ class UserProfileResponse(BaseModel):
 
 class UserStatusUpdateRequest(BaseModel):
     status: UserStatus
+
+
+class CommunityMemberResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: int
+    name: str
+    role: UserRole
+    avatar: Optional[str] = "/default-avatar.svg"
+    location: Optional[str] = "Community Member"
+    bio: Optional[str] = ""
+    availability: List[str] = []
+    rating: Optional[float] = 5.0
+    swaps_count: int = 0
+    created_at: datetime
+    skills: List[UserSkillResponse] = []

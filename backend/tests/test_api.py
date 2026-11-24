@@ -198,8 +198,105 @@ def test_admin_portal_and_rbac():
     sarah_login = client.post("/auth/login", json={"email": "sarah@example.com", "password": "Password123!"})
     assert sarah_login.status_code == 403
 
-    # 6. Admin unbans Sarah
-    client.post("/auth/login", json={"email": "admin_test@example.com", "password": "AdminSecurePass1!"})
+    # 6. Unban Sarah and verify admin role & credit controls
     unban_res = client.put(f"/admin/users/{sarah_id}/status", json={"status": "active"})
     assert unban_res.status_code == 200
     assert unban_res.json()["status"] == "active"
+
+    credits_res = client.put(f"/admin/users/{sarah_id}/credits", json={"time_credits": 15.0})
+    assert credits_res.status_code == 200
+    assert credits_res.json()["time_credits"] == 15.0
+
+    role_res = client.put(f"/admin/users/{sarah_id}/role", json={"role": "admin"})
+    assert role_res.status_code == 200
+    assert role_res.json()["role"] == "admin"
+
+    # Demote Sarah back to user
+    demote_res = client.put(f"/admin/users/{sarah_id}/role", json={"role": "user"})
+    assert demote_res.status_code == 200
+    assert demote_res.json()["role"] == "user"
+
+
+def test_community_directory_and_booking_escrow_flow():
+    # 1. Create a provider user
+    prov_signup = client.post(
+        "/auth/signup",
+        json={"name": "Maya Lin", "email": "maya@example.com", "password": "Password123!"}
+    )
+    assert prov_signup.status_code == 201
+    maya_id = prov_signup.json()["user"]["user_id"]
+
+    # Add a skill for Maya
+    sk_res = client.post("/skills", json={"name": "Guitar Basics", "category": "Music"})
+    assert sk_res.status_code == 201
+    guitar_skill_id = sk_res.json()["skill_id"]
+    client.post("/users/me/skills", json={"skill_id": guitar_skill_id, "type": "offering", "proficiency": "Expert"})
+
+    # 2. Public community directory should list active registered users with skills
+    community_res = client.get("/users")
+    assert community_res.status_code == 200
+    members = community_res.json()
+    maya_entry = next(m for m in members if m["user_id"] == maya_id)
+    assert maya_entry["name"] == "Maya Lin"
+    assert any(s["skill"]["name"] == "Guitar Basics" for s in maya_entry["skills"])
+
+    # 3. Log in as Sarah (has 15.0 credits from previous test) and book Maya
+    client.post("/auth/login", json={"email": "sarah@example.com", "password": "Password123!"})
+    book_res = client.post(
+        "/bookings",
+        json={
+            "provider_id": maya_id,
+            "skill_id": guitar_skill_id,
+            "skill_title": "Guitar Basics",
+            "scheduled_date": "Saturday",
+            "scheduled_time": "5:00 PM",
+            "format": "Online",
+            "credits": 2.0,
+        },
+    )
+    assert book_res.status_code == 201
+    booking_id = book_res.json()["booking_id"]
+    assert book_res.json()["status"] == "in_escrow"
+
+    # Verify Sarah's credits moved to escrow
+    sarah_me = client.get("/users/me").json()
+    assert sarah_me["time_credits"] == 13.0
+    assert sarah_me["in_escrow"] == 2.0
+
+    # 4. Complete booking and release escrow to Maya
+    complete_res = client.post(f"/bookings/{booking_id}/complete")
+    assert complete_res.status_code == 200
+    assert complete_res.json()["status"] == "completed"
+
+    sarah_after = client.get("/users/me").json()
+    assert sarah_after["in_escrow"] == 0.0
+    assert sarah_after["lifetime_spent"] == 2.0
+
+    # Log in as Maya and verify she earned +2.0 credits
+    client.post("/auth/login", json={"email": "maya@example.com", "password": "Password123!"})
+    maya_after = client.get("/users/me").json()
+    assert maya_after["time_credits"] == 12.0
+    assert maya_after["lifetime_earned"] == 2.0
+
+    # 5. Test booking cancellation & refund
+    cancel_book = client.post(
+        "/bookings",
+        json={
+            "provider_id": sarah_after["user_id"],
+            "skill_title": "Mechanics Coaching",
+            "scheduled_date": "Sunday",
+            "scheduled_time": "10:00 AM",
+            "format": "Online",
+            "credits": 1.0,
+        },
+    )
+    assert cancel_book.status_code == 201
+    cancel_id = cancel_book.json()["booking_id"]
+
+    cancel_res = client.post(f"/bookings/{cancel_id}/cancel")
+    assert cancel_res.status_code == 200
+    assert cancel_res.json()["status"] == "cancelled"
+
+    maya_refunded = client.get("/users/me").json()
+    assert maya_refunded["time_credits"] == 12.0
+    assert maya_refunded["in_escrow"] == 0.0

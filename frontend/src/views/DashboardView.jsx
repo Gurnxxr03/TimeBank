@@ -13,33 +13,21 @@ export default function DashboardView() {
     viewMemberProfile
   } = useTimeBank();
 
-  // Recommended providers based on user preferences
-  const recommendedProviders = [
-    {
-      member: members.find(m => m.id === 'gurnoor_singh') || members[1],
-      skill: { title: 'Advanced Python Mentorship', category: 'Development', icon: 'terminal' },
-      matchScore: 95,
-      format: 'Online',
-      reason: 'Matches your Python interest + Saturday availability.',
-      availability: 'Saturdays, Mornings'
-    },
-    {
-      member: members.find(m => m.id === 'rohit_verma') || members[2],
-      skill: { title: 'Keyboard & Harmonium Basics', category: 'Music', icon: 'piano' },
-      matchScore: 88,
-      format: 'In-Person',
-      reason: 'Matches your saved Music & Piano goals.',
-      availability: 'Evenings, Weekends'
-    },
-    {
-      member: members.find(m => m.id === 'ananya_sharma') || members[0],
-      skill: { title: 'Balcony Gardening & Composting', category: 'Gardening', icon: 'yard' },
-      matchScore: 85,
-      format: 'In-Person / Online',
-      reason: 'Top community rating in Bengaluru (2.4 km away).',
-      availability: 'Weekends, Afternoons'
-    }
-  ];
+  // Recommended providers dynamically derived from registered community members
+  const recommendedProviders = members
+    .filter((m) => m.id !== user.id && (m.skills || []).length > 0)
+    .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+    .slice(0, 3)
+    .map((m) => {
+      const topSkill = m.skills[0];
+      return {
+        member: m,
+        skill: topSkill,
+        matchScore: m.matchScore || 85,
+        reason: m.matchBreakdown?.skillNeed || `Offers ${topSkill.title}`,
+        availability: (m.availability && m.availability.length > 0) ? m.availability.join(', ') : 'Flexible',
+      };
+    });
 
   return (
     <div className="pt-24 lg:pt-28 pb-28 px-margin-mobile md:px-margin-desktop w-full max-w-container-max mx-auto">
@@ -124,8 +112,23 @@ export default function DashboardView() {
               </button>
             </div>
 
+            {recommendedProviders.length === 0 ? (
+              <div className="bg-white/40 border border-white/80 p-8 rounded-2xl text-center">
+                <span className="material-symbols-outlined text-3xl text-on-surface-variant/40 mb-2">group_add</span>
+                <p className="text-sm font-bold text-on-surface mb-1">No community skill matches yet</p>
+                <p className="text-xs text-on-surface-variant mb-4">
+                  As more registered members add skills to offer, personalized matches will appear here.
+                </p>
+                <button
+                  onClick={() => setPostSkillModalOpen(true)}
+                  className="px-5 py-2 bg-primary text-white rounded-full text-xs font-bold"
+                >
+                  Offer Your First Skill
+                </button>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {recommendedProviders.map(({ member, skill, matchScore, format, reason, availability }) => (
+              {recommendedProviders.map(({ member, skill, matchScore, reason, availability }) => (
                 <div
                   key={member.id}
                   className="bg-white/40 border border-white/80 p-5 rounded-2xl flex flex-col justify-between hover:scale-[1.02] hover:bg-white/60 transition-all duration-300 group"
@@ -181,6 +184,7 @@ export default function DashboardView() {
                 </div>
               ))}
             </div>
+            )}
           </section>
 
           {/* User Skills Bento Overview */}

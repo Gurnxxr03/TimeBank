@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { authApi, userApi } from '../api/client';
+import { authApi, userApi, setAuthToken } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -13,6 +13,7 @@ export function AuthProvider({ children }) {
       const profile = await userApi.getProfile();
       setUser(profile);
     } catch (_err) {
+      setAuthToken(null);
       setUser(null);
     } finally {
       setLoading(false);
@@ -26,6 +27,9 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setError(null);
     const res = await authApi.login({ email, password });
+    if (res?.access_token) {
+      setAuthToken(res.access_token);
+    }
     const profile = await userApi.getProfile();
     setUser(profile);
     return profile || res?.user;
@@ -34,6 +38,9 @@ export function AuthProvider({ children }) {
   const signup = async (name, email, password) => {
     setError(null);
     const res = await authApi.signup({ name, email, password });
+    if (res?.access_token) {
+      setAuthToken(res.access_token);
+    }
     const profile = await userApi.getProfile();
     setUser(profile);
     return profile || res?.user;
@@ -42,6 +49,9 @@ export function AuthProvider({ children }) {
   const googleLogin = async (credential) => {
     setError(null);
     const res = await authApi.googleAuth(credential);
+    if (res?.access_token) {
+      setAuthToken(res.access_token);
+    }
     const profile = await userApi.getProfile();
     setUser(profile);
     return profile || res?.user;
@@ -53,6 +63,7 @@ export function AuthProvider({ children }) {
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
+      setAuthToken(null);
       setUser(null);
     }
   };

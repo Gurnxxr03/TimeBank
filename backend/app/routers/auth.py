@@ -67,6 +67,7 @@ def signup(req: SignupRequest, response: Response, db: Session = Depends(get_db)
     return AuthMessageResponse(
         message="Account created successfully",
         user=UserAuthResponse.model_validate(new_user),
+        access_token=token,
     )
 
 
@@ -108,6 +109,7 @@ def login(req: LoginRequest, response: Response, db: Session = Depends(get_db)):
     return AuthMessageResponse(
         message="Login successful",
         user=UserAuthResponse.model_validate(user),
+        access_token=token,
     )
 
 
@@ -198,6 +200,7 @@ def google_auth(req: GoogleAuthRequest, response: Response, db: Session = Depend
     return AuthMessageResponse(
         message="Google authentication successful",
         user=UserAuthResponse.model_validate(user),
+        access_token=token,
     )
 
 

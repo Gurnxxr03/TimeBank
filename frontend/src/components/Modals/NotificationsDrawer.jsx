@@ -6,14 +6,14 @@ export default function NotificationsDrawer() {
     notificationsDrawerOpen, 
     setNotificationsDrawerOpen, 
     notifications, 
-    setNotifications,
+    markAllNotificationsRead,
     setCurrentView 
   } = useTimeBank();
 
   if (!notificationsDrawerOpen) return null;
 
   const markAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markAllNotificationsRead();
   };
 
   return (

@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -45,16 +45,28 @@ class User(Base):
         default=UserStatus.ACTIVE,
         nullable=False
     )
-    avatar = Column(String(1000), nullable=True, default="/default-avatar.svg")
+    avatar = Column(Text, nullable=True, default="/default-avatar.svg")
     location = Column(String(255), nullable=True, default="Community Member")
-    bio = Column(String(2000), nullable=True, default="")
+    bio = Column(Text, nullable=True, default="")
     time_credits = Column(Float, nullable=False, default=10.0)
     in_escrow = Column(Float, nullable=False, default=0.0)
     lifetime_earned = Column(Float, nullable=False, default=0.0)
     lifetime_spent = Column(Float, nullable=False, default=0.0)
     onboarding_completed = Column(Integer, nullable=False, default=0)
-    availability = Column(String(1000), nullable=True, default="[]")
+    availability = Column(Text, nullable=True, default="[]")
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
     user_skills = relationship("UserSkill", back_populates="user", cascade="all, delete-orphan")
+    requested_bookings = relationship(
+        "Booking",
+        foreign_keys="Booking.requester_id",
+        back_populates="requester",
+        cascade="all, delete-orphan",
+    )
+    provided_bookings = relationship(
+        "Booking",
+        foreign_keys="Booking.provider_id",
+        back_populates="provider",
+        cascade="all, delete-orphan",
+    )

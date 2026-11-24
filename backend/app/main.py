@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import auth_router, users_router, skills_router, admin_router
+from app.routers import auth_router, users_router, skills_router, admin_router, bookings_router
 
 app = FastAPI(
     title="TimeBank API",
@@ -11,12 +11,14 @@ app = FastAPI(
 
 # CORS configuration - Exact origins only (No wildcard when allow_credentials=True)
 raw_origins = [
-    settings.FRONTEND_URL,
     "http://localhost:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:5174",
 ]
+for env_val in (settings.FRONTEND_URL, settings.ALLOWED_ORIGINS):
+    if env_val:
+        raw_origins.extend([item.strip() for item in env_val.split(",") if item.strip()])
 allowed_origins = list({origin.rstrip("/") for origin in raw_origins if origin})
 
 app.add_middleware(
@@ -31,6 +33,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(skills_router)
+app.include_router(bookings_router)
 app.include_router(admin_router)
 
 

@@ -44,3 +44,4 @@ class UserAuthResponse(BaseModel):
 class AuthMessageResponse(BaseModel):
     message: str
     user: UserAuthResponse
+    access_token: Optional[str] = None

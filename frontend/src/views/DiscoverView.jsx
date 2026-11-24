@@ -2,12 +2,20 @@ import React, { useState, useMemo } from 'react';
 import { useTimeBank } from '../context/TimeBankContext';
 
 export default function DiscoverView() {
-  const { members, openBookingModal, viewMemberProfile } = useTimeBank();
+  const { members, membersLoading, user, openBookingModal, viewMemberProfile } = useTimeBank();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedFormat, setSelectedFormat] = useState('All');
 
-  const categories = ['All', 'Development', 'Design', 'Languages', 'Music', 'Gardening', 'DIY & Home'];
+  const categories = useMemo(() => {
+    const cats = new Set(['All']);
+    members.forEach((m) => {
+      (m.skills || []).forEach((s) => {
+        if (s.category) cats.add(s.category);
+      });
+    });
+    return Array.from(cats);
+  }, [members]);
 
   // Flattened skills with provider info
   const skillCards = useMemo(() => {
@@ -115,7 +123,12 @@ export default function DiscoverView() {
       </div>
 
       {/* Provider & Skills Grid */}
-      {skillCards.length === 0 ? (
+      {membersLoading ? (
+        <div className="glass-panel p-12 text-center rounded-3xl max-w-lg mx-auto my-12">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs text-on-surface-variant">Loading registered community members...</p>
+        </div>
+      ) : skillCards.length === 0 ? (
         <div className="glass-panel p-12 text-center rounded-3xl max-w-lg mx-auto my-12">
           <span className="material-symbols-outlined text-4xl text-on-surface-variant/40 mb-3">search_off</span>
           <h3 className="font-headline-md text-lg font-bold text-on-surface mb-2">No skills found</h3>
@@ -198,13 +211,19 @@ export default function DiscoverView() {
                 >
                   Profile
                 </button>
-                <button
-                  onClick={() => openBookingModal(member, skill)}
-                  className="flex-1 py-2 px-3 bg-primary text-white rounded-xl font-label-sm text-xs font-bold hover:bg-primary/90 hover:shadow-xs transition-all flex items-center justify-center gap-1"
-                >
-                  <span>Request (1 Cr)</span>
-                  <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                </button>
+                {member.id === user.id ? (
+                  <span className="flex-1 py-2 px-3 bg-surface-variant/60 text-on-surface-variant rounded-xl text-xs font-bold text-center">
+                    Your Listing
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => openBookingModal(member, skill)}
+                    className="flex-1 py-2 px-3 bg-primary text-white rounded-xl font-label-sm text-xs font-bold hover:bg-primary/90 hover:shadow-xs transition-all flex items-center justify-center gap-1"
+                  >
+                    <span>Request (1 Cr)</span>
+                    <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                  </button>
+                )}
               </div>
             </article>
           ))}
