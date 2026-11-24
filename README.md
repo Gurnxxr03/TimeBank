@@ -1,220 +1,216 @@
-# ⏳ TimeBank — Community Skill Exchange Platform (Phase 1 MVP)
+# ⏳ TimeBank — Community Skill Exchange Platform
 
-TimeBank is a decentralized community skill-exchange platform where members trade knowledge and practical services using **equal-value time credits** (**1 hour of service provided = 1 time credit earned**).
+TimeBank is a decentralized, community-driven skill exchange web platform built on the principle of **equal-value time currency**:
+$$\text{1 Hour of Service Provided} = \text{1 Time Credit Earned}$$
+
+Whether someone teaches quantum physics, repairs a bicycle, speaks conversational Spanish, or mentors in Python architecture, **every human hour is valued equally**.
+
+---
+
+## 🎯 Presentation Highlights & Key Capabilities
+
+### 1. 🔐 Complete Authentication & RBAC Integrity
+- **Local Credentials**: Secure user registration & login hashed with **bcrypt**, sessions managed via **HttpOnly, SameSite JWT cookies** with cross-origin Bearer token fallback.
+- **Google OAuth 2.0**: Direct "Sign in with Google" integration powered by Google Identity Services (GIS) with server-side token validation against Google's public keys.
+- **Role-Based Access Control (RBAC)**: Strict role separation between standard **Members** and **Administrators** (`verify_token` & `verify_admin` dependencies).
+- **Security Protections**: Auto-lockout for banned accounts, input sanitization, and strict CORS configuration.
+
+### 2. 👥 Zero-Mock Live Community Directory
+- **100% Database-Driven**: All mock datasets have been completely removed.
+- **Dynamic Member Profiles**: Real-time listing of active registered members, avatars, neighborhood locations, bio, offering/seeking skills, and ratings.
+- **Live Match & Compatibility**: Dynamic algorithm scoring compatibility based on shared availability, category alignment, and distance.
+
+### 3. ⏱️ Decentralized Time Wallet & Escrow Ledger
+- **Initial Welcome Balance**: Every newly registered user automatically starts with **10.0 Time Credits**.
+- **Atomic Escrow Engine**:
+  - When booking a swap session, credits are placed into **Escrow** (`in_escrow`) and held securely.
+  - Upon session completion by the requester, credits are released to the provider's wallet.
+  - If a session is cancelled, credits are instantly refunded to the requester.
+- **Live Ledger**: Full transaction history showing earned credits, spent credits, and active escrow holds.
+
+### 4. 🛡️ Comprehensive Admin Portal (`/admin`)
+- **System Metrics**: Live stats for total users, active vs. banned members, admin count, skills catalog, total credits in circulation, credits held in escrow, and total swaps completed.
+- **Member Management**: Filter by status (`active` / `banned`) or role (`user` / `admin`), instant name/email/location search, and pagination.
+- **Deep User Inspection**: Modal showing full profile details, onboarding progress, contact info, offered/sought skills, and complete booking history.
+- **Administrative Moderation**:
+  - One-click **Ban / Unban** (with self-ban prevention for safety).
+  - One-click **Role Promotion / Demotion** (`user` $\leftrightarrow$ `admin`).
+  - **Credit Balance Adjustments** directly from the admin panel.
 
 ---
 
 ## 🏗️ Architecture & Monorepo Structure
 
-This project is organized as an independently runnable monorepo:
-
 ```
 TimeBank_Project/
-├── backend/                  # FastAPI Python service
-│   ├── alembic/              # Database schema migrations
+├── backend/                       # FastAPI High-Performance Python Backend
+│   ├── alembic/                   # Database schema migrations (001, 002, 003)
 │   ├── app/
-│   │   ├── models/           # SQLAlchemy ORM models (users, skills, user_skills)
-│   │   ├── schemas/          # Pydantic validation & response schemas
-│   │   ├── routers/          # API endpoints (auth, users, skills, admin)
-│   │   ├── utils/            # Security (bcrypt, PyJWT, Google token verification)
-│   │   ├── config.py         # App settings & env loading
-│   │   ├── database.py       # SQLAlchemy engine & session factory
-│   │   └── main.py           # FastAPI entrypoint with strict CORS
+│   │   ├── models/                # SQLAlchemy ORM (User, Skill, UserSkill, Booking)
+│   │   ├── schemas/               # Pydantic schemas for requests, responses & admin
+│   │   ├── routers/               # auth, users, skills, bookings, admin
+│   │   ├── utils/                 # Security (bcrypt, JWT, Google GIS verification)
+│   │   ├── config.py              # Environment configuration & CORS resolution
+│   │   ├── database.py            # Engine & session management
+│   │   ├── dependencies.py        # RBAC & authentication guards
+│   │   └── main.py                # FastAPI entrypoint
 │   ├── scripts/
-│   │   └── seed.py           # Seed script for initial skills & admin/test users
+│   │   └── seed.py                # Database seeder (admin, demo user, catalog skills)
 │   ├── tests/
-│   │   └── test_api.py       # Automated API & RBAC test suite
-│   ├── .env.example          # Backend environment template
-│   └── requirements.txt      # Python dependencies
+│   │   └── test_api.py            # Comprehensive pytest test suite (4/4 passing)
+│   ├── Dockerfile                 # Production backend container
+│   ├── requirements.txt           # Python dependencies
+│   └── .env.example               # Backend environment template
 │
-├── frontend/                 # Vite + React 19 + Tailwind CSS SPA
+├── frontend/                      # React 19 + Vite + Tailwind CSS SPA
 │   ├── src/
-│   │   ├── api/              # Universal fetch client (credentials: include)
-│   │   ├── context/          # AuthContext (session validation via GET /users/me)
-│   │   ├── components/       # ProtectedRoute, Navbar, GoogleSignInButton
-│   │   ├── pages/            # LoginPage, SignupPage, DashboardPage, AdminPage
-│   │   ├── App.jsx           # App shell & router
-│   │   └── index.css         # Custom styling & Tailwind design system
-│   ├── .env.example          # Frontend environment template
-│   └── package.json          # Frontend scripts and packages
+│   │   ├── api/                   # Universal client (HttpOnly cookies + Bearer auth)
+│   │   ├── context/               # AuthContext & TimeBankContext (live state & bookings)
+│   │   ├── components/            # Navbar, Sidebar, Modals, ProtectedRoute
+│   │   ├── pages/                 # LoginPage, SignupPage, AdminPage
+│   │   ├── views/                 # LandingView, DashboardView, DiscoverView,
+│   │   │                          # MySkillsView, CreditHistoryView, MemberProfileView,
+│   │   │                          # OnboardingView
+│   │   └── App.jsx                # Application shell & route manager
+│   ├── Dockerfile                 # Production multi-stage Nginx container
+│   ├── nginx.conf                 # Nginx SPA reverse proxy & static routing
+│   └── package.json               # Node dependencies & scripts
 │
-├── docker-compose.yml        # Docker service for MySQL 8.0
-└── README.md                 # Project documentation & setup guide
+├── docker-compose.yml             # MySQL 8.0 container service
+└── README.md                      # Project documentation & presentation guide
 ```
 
 ---
 
-## 🗄️ Database Setup (MySQL)
+## 🚀 Quickstart & Presentation Setup
 
-You can run MySQL using **Docker Compose** (recommended) or your **local MySQL installation**.
+### Step 1: Database (MySQL 8.0)
 
-### Option A: Using Docker Compose (Fastest)
-
-Ensure Docker Desktop is running, then execute from the project root:
-
+Using Docker Compose:
 ```bash
 docker compose up -d
 ```
-
-This starts a MySQL 8.0 container on `localhost:3306` with:
-- **Database:** `timebank_db`
-- **User:** `timebank_user`
-- **Password:** `timebank_pass`
-- **Root Password:** `rootpassword`
-
-To stop the container:
-```bash
-docker compose down
-```
+*MySQL is now reachable at `localhost:3307` (or `3306` based on your docker-compose mapping) with database `timebank_db`.*
 
 ---
 
-### Option B: Local MySQL Installation (macOS / Linux)
+### Step 2: Backend Setup & Seeding
 
-1. **Install MySQL via Homebrew (macOS):**
-   ```bash
-   brew install mysql
-   brew services start mysql
-   ```
-
-2. **Create the Database and User:**
-   ```sql
-   mysql -u root -p
-   ```
-   Execute the following SQL commands:
-   ```sql
-   CREATE DATABASE IF NOT EXISTS timebank_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER IF NOT EXISTS 'timebank_user'@'localhost' IDENTIFIED BY 'timebank_pass';
-   GRANT ALL PRIVILEGES ON timebank_db.* TO 'timebank_user'@'localhost';
-   FLUSH PRIVILEGES;
-   EXIT;
-   ```
-
----
-
-## 🔑 Google Cloud OAuth Setup (Sign in with Google)
-
-To enable **"Sign in with Google"** using Google Identity Services (GIS):
-
-### Step-by-Step Instructions:
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. **Create a New Project** (e.g., `TimeBank Dev`).
-3. Navigate to **APIs & Services > OAuth consent screen**:
-   - Select **External** and click **Create**.
-   - Fill in **App Name** (`TimeBank`), **User Support Email**, and **Developer Contact Email**.
-   - Click **Save and Continue** through Scopes (default `.../auth/userinfo.email` and `.../auth/userinfo.profile` are sufficient).
-   - Under **Test users**, add your personal Google email address.
-4. Navigate to **APIs & Services > Credentials**:
-   - Click **Create Credentials > OAuth client ID**.
-   - Application type: **Web application**.
-   - Name: `TimeBank Web Client`.
-   - **Authorized JavaScript origins**:
-     - `http://localhost:5173`
-     - `http://127.0.0.1:5173`
-   - **Authorized redirect URIs**:
-     - `http://localhost:5173`
-5. Click **Create** and copy your **Client ID** (e.g., `1234567890-xyz.apps.googleusercontent.com`).
-
-### Add to Environment Files:
-
-- In `backend/.env`:
-  ```env
-  GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-  ```
-- In `frontend/.env`:
-  ```env
-  VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-  ```
-
----
-
-## 🚀 Running the Project
-
-### 1. Start Backend Service
-
+In a terminal window:
 ```bash
 cd backend
 
-# Create & activate Python virtual environment
+# 1. Create and activate virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
 
-# Install dependencies
+# 2. Install dependencies
 pip install -r requirements.txt
 
-# Run Alembic Database Migrations
+# 3. Apply all database migrations (including bookings & escrow)
 alembic upgrade head
 
-# Seed Initial Skills & Test Users
+# 4. Seed initial skills & test accounts
 python scripts/seed.py
 
-# Start FastAPI development server
+# 5. Start the FastAPI development server
 uvicorn app.main:app --reload --port 8000
 ```
 
-- **API Base URL:** `http://localhost:8000`
-- **Interactive OpenAPI Documentation:** `http://localhost:8000/docs`
+- **Backend API URL**: `http://localhost:8000`
+- **Swagger / Interactive OpenAPI Docs**: `http://localhost:8000/docs`
+- **Health Check Endpoint**: `http://localhost:8000/health`
 
 ---
 
-### 2. Start Frontend App
+### Step 3: Frontend Setup
 
-In a new terminal window:
-
+In a second terminal window:
 ```bash
 cd frontend
 
-# Install Node dependencies
+# 1. Install dependencies
 npm install
 
-# Start Vite dev server
+# 2. Start Vite development server
 npm run dev
 ```
 
-- **Frontend App:** `http://localhost:5173`
+- **Frontend Application URL**: `http://localhost:5173`
 
 ---
 
-## 👥 Seeded Test Credentials
+## 👥 Seeded Credentials for Demo
 
-After running `python scripts/seed.py`, you can test with:
+Use these pre-configured accounts during the presentation:
 
-| Role | Email | Password | Permissions |
+| Role | Email | Password | What to Demo |
 | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@timebank.org` | `AdminPassword123!` | Access to `/dashboard` & `/admin` Portal (user ban/unban, stats) |
-| **Member** | `alex@timebank.org` | `Password123!` | Member Dashboard with offering/seeking skills |
+| **Admin** | `admin@timebank.org` | `AdminPassword123!` | System metrics, all registered users, ban/unban, role changes, credit adjustments. |
+| **Member** | `alex@timebank.org` | `Password123!` | Member dashboard, skill offerings, booking swaps, releasing escrow, wallet ledger. |
+
+*(You can also sign up brand-new accounts via the Sign Up form or Sign In with Google!)*
 
 ---
 
-## 🧪 Testing & Code Quality
+## 🎬 Recommended 5-Minute Demo Flow
 
-### Backend Automated Tests
+1. **Landing Page (`/`)**:
+   - Present the core concept: 1 hour = 1 credit.
+   - Show the dynamic "Meet Community Members Ready to Swap" section pulling real registered profiles.
+2. **Authentication Flow (`/signup` & `/login`)**:
+   - Register a new user or log in with Google GIS.
+   - Point out that new users immediately receive **10.0 Time Credits**.
+3. **Skills & Profile Setup (`/onboarding` & `/my-skills`)**:
+   - Add a skill offering (e.g. *Python Programming* or *Conversational Spanish*).
+   - Show how the skill appears instantly in the platform's global catalog and community feed.
+4. **Discover & Book a Swap (`/discover`)**:
+   - Search for a skill or filter by category.
+   - Click **Request (1 Cr)** on another registered member.
+   - Confirm booking in the modal $\rightarrow$ celebrate with confetti and observe **1.0 credit moved into Escrow**.
+5. **Wallet Ledger & Completion (`/wallet` & `/my-skills`)**:
+   - View the Escrow section in My Skills.
+   - Click **Confirm & Release** $\rightarrow$ credit transfers from escrow to provider; view ledger transaction.
+6. **Administrator Portal (`/admin`)**:
+   - Log in as `admin@timebank.org`.
+   - Review live platform-wide metrics (active users, credits in circulation, completed swaps).
+   - Search registered members, inspect their detail card, promote a member, or adjust credits.
+
+---
+
+## 🧪 Testing & Verification
+
+### Run Backend Test Suite (100% Pass)
 ```bash
 cd backend
 source .venv/bin/activate
 PYTHONPATH=. pytest -v tests/
 ```
+Tests cover:
+- User signup, duplicate rejection, and profile updates.
+- Skill catalog creation and duplicate checks.
+- RBAC permissions, admin statistics, and account ban enforcement.
+- Live community listing, booking creation, escrow credit deductions, session completion, and cancellation refunds.
 
-### Frontend Typecheck, Lint & Build
+### Lint & Production Build
 ```bash
 cd frontend
-npm run lint
-npm run build
+npm run lint    # oxlint - 0 errors
+npm run build   # vite build - production bundle
 ```
 
 ---
 
-## 🛡️ Authentication & Security Implementation
+## 🐳 Production Deployment
 
-1. **HttpOnly Cookie Sessions**:
-   - JWT tokens are issued strictly inside `HttpOnly`, `SameSite=Lax` cookies.
-   - Frontend never handles or stores raw tokens in `localStorage` / `sessionStorage`, mitigating XSS attacks.
-2. **Strict CORS**:
-   - FastAPI CORS configured with `allow_credentials=True` restricted specifically to `http://localhost:5173` (no wildcards).
-3. **Google OAuth Token Verification**:
-   - Google ID tokens are verified server-side via `google-auth` against Google public keys.
-   - Prevents silent account takeover if an email already exists under a password login.
-4. **Role-Based Access Control (RBAC)**:
-   - `verify_token` dependency decodes session cookies and blocks suspended (`banned`) accounts with `403 Forbidden`.
-   - `verify_admin` dependency guarantees admin-only routes (`/admin/*`) are protected.
+Both frontend and backend are containerized and ready for cloud deployment (Docker, GCP Cloud Run, AWS ECS, or Render):
+
+```bash
+# Build and run backend container
+docker build -t timebank-backend ./backend
+docker run -p 8000:8000 --env-file backend/.env timebank-backend
+
+# Build and run frontend container
+docker build -t timebank-frontend ./frontend
+docker run -p 80:80 timebank-frontend
+```
